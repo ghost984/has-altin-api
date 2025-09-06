@@ -1,43 +1,40 @@
 from flask import Flask, jsonify
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
 import time
 
 app = Flask(__name__)
 
+# Ana sayfa route
+@app.route('/', methods=['GET'])
+def home():
+    return "API çalışıyor. Has Altın fiyatı için /altin endpoint'ini kullanın."
+
+# Has Altın fiyat endpoint
 @app.route('/altin', methods=['GET'])
 def altin_fiyat():
     try:
-        # Selenium ile Chrome başlat
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless")  # Tarayıcıyı açmadan çalıştır
+        # Headless Chrome ayarları (Render gibi Linux ortamları için)
+        options = Options()
+        options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+        driver = webdriver.Chrome(options=options)
+
+        # Harem Altın ana sayfasına git
         driver.get("https://www.haremaltin.com")
-        
-        # Sayfanın yüklenmesi için bekle
-        time.sleep(3)  # gerekirse artır
-        
-        # Has Altın alış fiyatını al
-        has_altin_alis = driver.find_element(By.ID, "alis__ALTIN").text.strip()
-        # Has Altın satış fiyatını almak istersen örnek:
-        # has_altin_satis = driver.find_element(By.ID, "satis__ALTIN").text.strip()
-        
+        time.sleep(3)  # Sayfanın yüklenmesini bekle
+
+        # Has Altın fiyatını çek
+        has_altin = driver.find_element("id", "alis__ALTIN").text
         driver.quit()
-        
-        result = {
-            "has_altin_alis": has_altin_alis
-            # "has_altin_satis": has_altin_satis
-        }
-        
-        return jsonify(result)
-    
+
+        return jsonify({"has_altin_alis": has_altin})
+
     except Exception as e:
         return jsonify({"error": str(e)})
 
+# Flask uygulamasını Render için çalıştır
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
